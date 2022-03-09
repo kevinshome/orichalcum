@@ -5,8 +5,15 @@ description = "YouTube data parser built for needlerank <https://github.com/nhtn
 authors = ["nhtnr <noahtnr@gmail.com>"]
 license = "MIT"
 
+[tool.poetry.scripts]
+orc = "orichalum.orichalum:main"
+
 [tool.poetry.dependencies]
 python = "^3.8"
+requests = "^2.27.1"
+click = "^8.0.4"
+python-dotenv = "^0.19.2"
+psycopg = {extras = ["binary"], version = "^3.0.9"}
 
 [tool.poetry.dev-dependencies]
 

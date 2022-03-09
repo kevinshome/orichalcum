@@ -1,0 +1,32 @@
+orichalcum
+=========
+
+data fetcher and parser built for needlerank <https://github.com/nhtnr/needlerank>
+
+===
+
+to install orichalcum in a venv, get poetry and run:
+    poetry install
+then:
+    poetry shell
+then set up a '.env' file, and add your API_KEY.
+
+to download all video info run:
+    python3 -m orichalcum.orichalcum
+
+to move that data to a postgres database, set up the environment variable:
+    DATABASE_URI
+in your '.env' file, then run:
+    python3 -m orichalcum.orichalcum --create-db
+however, you first need to create the database using a tool like psql
+
+other options can be found by running:
+    python3 -m orichalcum.orichalcum --help
+
+===
+
+orichalcum is released under the MIT license, so feel free to use it however you want, but i highly recommend against using it at all. for anything.
+it's built for one specific focus, and is very fine tuned for that, there are definitely way better youtube data api scrapers out there. it really only
+exists here for archival/transparency purposes. also, it isn't made that well, i had to implement a bunch of unique hacks because of anthony's inconsistencies
+in naming and labeling.
+

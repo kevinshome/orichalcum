@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "orichalcum"
-version = "0.1.0"
+version = "0.1.1"
 description = "YouTube data parser built for needlerank <https://github.com/nhtnr/needlerank>"
 authors = ["nhtnr <noahtnr@gmail.com>"]
 license = "MIT"

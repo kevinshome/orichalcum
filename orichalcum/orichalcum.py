@@ -69,7 +69,7 @@ def fetch_playlist_data() -> dict:
         f.write(json.dumps(list_data))
 
 def create_database():
-    with psycopg.connect(os.environ["DATABASE_URI"]) as conn:
+    with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         cursor = conn.cursor()
         print(f"Creating table 'reviews'...")
         cursor.execute("DROP TABLE IF EXISTS reviews")

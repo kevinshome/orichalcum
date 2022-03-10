@@ -10,22 +10,13 @@ import requests
 from . import parser
 
 API_KEY = os.environ["API_KEY"]
-global glob_data_folder
-playlist_ids = {
-    "rock": "PLP4CSgl7K7ori6-Iz-AWcX561iWCfapt_",
-    "hipHop": "PLP4CSgl7K7ormBIO138tYonB949PHnNcP",
-    "pop": "PLP4CSgl7K7oqibt_5oDPppWxQ0iaxyyeq",
-    "electronic": "PLP4CSgl7K7ormX2pL9h0inES2Ub630NoL",
-    "loudRock": "PLP4CSgl7K7orAG2zKtoJKnTt_bAnLwTXo",
-    "classics": "PLP4CSgl7K7or_7JI7RsEsptyS4wfLFGIN",
-    "other": "PLP4CSgl7K7orSnEBkcBRqI5fDgKSs5c8o"
-}
+logfile = open("log.txt", 'a')
 
-def fetch_50(playlist: str, token: Optional[str]=None) -> Tuple[Dict, str]:
+def fetch_50(token: Optional[str]=None) -> Tuple[Dict, str]:
     # fetch first page
     params_payload = {
         "key": API_KEY,
-        "playlistId": playlist_ids[playlist],
+        "playlistId": "UUt7fwAhXDy3oNFTAzF2o8Pw",
         "part": "snippet",
         "maxResults": "50"
     }
@@ -37,76 +28,84 @@ def fetch_50(playlist: str, token: Optional[str]=None) -> Tuple[Dict, str]:
     ).json()
     return api_data, api_data.get("nextPageToken")
 
-def fetch_playlist_data(playlist_list: List[str]) -> dict:
-    global glob_data_folder
-    page_token: Optional[str] = None
-    for playlist in playlist_list:
-        list_data = []
-        print(f"Fetching data from '{playlist}' playlist...")
+def fetch_playlist_data() -> dict:
+    global page_token
+    global count
+    page_token = None
+    list_data = []
+    count = 0
+    print(f"Fetching data from 'Uploads from theneedledrop' playlist...")
 
-        api_data, page_token = fetch_50(playlist)
+    def _fetch(_page_token: Optional[str]=None):
+        global page_token
+        global count
+        api_data, page_token = fetch_50(_page_token)
+        count += 50
+
+        os.system("clear")
+        if page_token:
+            print(f"Progress: {count}/{api_data['pageInfo']['totalResults']}")
+        else:
+            print(f"Progress: {api_data['pageInfo']['totalResults']}/{api_data['pageInfo']['totalResults']}")
+
         for item in api_data["items"]:
-            list_data.append(parser.create_video_object(item))
-        while page_token:
-            api_data, page_token = fetch_50(playlist, page_token)
-            for item in api_data["items"]:
-                if "TRACK REVIEW" in item["snippet"]["title"]: # skip track reviews, we're only here for the albums
-                    continue
-                elif item["snippet"]["title"] == "Private video": # skip private videos, obviously
-                    continue
-                list_data.append(parser.create_video_object(item))
-        with open(f"{glob_data_folder}/{playlist}.json", 'w') as f:
-            list_data.reverse()
-            f.write(json.dumps(list_data))
+            t: str = item["snippet"]["title"]
+            if "review" not in t.lower(): # since we're pulling from uploads playlist, we need to skip any non-review vids
+                continue
+            if "track review" in t.lower(): # skip track reviews, we're only here for the albums
+                continue
+            elif t == "Private video": # skip private videos, obviously
+                continue
+            _obj = parser.create_video_object(item, logfile)
+            if _obj:
+                list_data.append(_obj)
+
+    _fetch()
+    while page_token:
+        _fetch(page_token)
+
+    with open("reviews.json", 'w') as f:
+        list_data.reverse()
+        f.write(json.dumps(list_data))
 
 def create_database():
     with psycopg.connect(os.environ["DATABASE_URI"]) as conn:
         cursor = conn.cursor()
-        for file in os.listdir(glob_data_folder):
-            with open(f"{glob_data_folder}/{file}") as f:
-                tablename = file.replace(".json", "")
-                print(f"Creating table {tablename}...")
+        print(f"Creating table 'reviews'...")
+        cursor.execute("DROP TABLE IF EXISTS reviews")
+        cursor.execute("""
+        CREATE TABLE reviews(
+            id character varying PRIMARY KEY,
+            artist character varying,
+            album character varying,
+            rating_data JSON
+        )
+        """)
+        with open("reviews.json") as f:
+            data = json.load(f)
+            print(f"Populating table 'reviews' from  'reviews.json'...")
+            for item in data:
                 cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS {tablename}(
-                    id character varying PRIMARY KEY,
-                    artist character varying,
-                    album character varying,
-                    rating_data JSON
+                INSERT INTO reviews (id, artist, album, rating_data) VALUES(
+                    '{item["video_id"]}',
+                    '{item["artist"]}',
+                    '{item["album"]}',
+                    '{json.dumps(item["rating_data"])}'
                 )
                 """)
-                data = json.load(f)
-                print(f"Populating table {tablename}...")
-                for item in data:
-                    cursor.execute(f"""
-                    INSERT INTO {tablename} (id, artist, album, rating_data) VALUES(
-                        '{item["video_id"]}',
-                        '{item["artist"]}',
-                        '{item["album"]}',
-                        '{json.dumps(item["rating_data"])}'
-                    )
-                    """)
-                conn.commit()
-                print(f"Table {tablename} created successfully!")
+            conn.commit()
         cursor.close()
     raise SystemExit(0)
 
 @click.command()
-@click.option("--playlists", default="all", help="Which (comma-seperated) playlists to fetch data from (options: rock, hipHop, pop, electronic, loudRock, classics, other)")
-@click.option("--data-folder", default="data", help="Folder in which to store JSON data (default: './data')")
+@click.option("--no-pull", is_flag=True, help="Do not perform a playlist pull from YouTube")
 @click.option("--create-db", is_flag=True, help="Create a database with fetched JSON data")
-def main(playlists, data_folder, create_db):
-    global glob_data_folder
-    glob_data_folder = data_folder
+def main(no_pull, create_db):
+    if not no_pull:
+        fetch_playlist_data()
     if create_db:
         create_database()
 
-    if not os.path.exists("data"):
-        os.mkdir("data")
-
-    if playlists == "all":
-        fetch_playlist_data(playlist_ids.keys())
-    else: # TODO: add sanitizer
-        fetch_playlist_data(playlists.split(','))
-
 if __name__ == "__main__":
     main()
+    logfile.close()

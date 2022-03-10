@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "orichalum"
+name = "orichalcum"
 version = "0.1.0"
 description = "YouTube data parser built for needlerank <https://github.com/nhtnr/needlerank>"
 authors = ["nhtnr <noahtnr@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.scripts]
-orc = "orichalum.orichalum:main"
+orc = "orichalcum.orichalcum:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"

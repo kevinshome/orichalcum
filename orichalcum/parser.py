@@ -1,4 +1,4 @@
-from typing import Union, Dict
+from typing import Union, Dict, TextIO, Optional
 
 problem_titles = {
     "kendrick lamar untitled unmastered. review | 03.06.16.mov": {
@@ -16,6 +16,10 @@ problem_titles = {
     "Star Wars Head Space VARIOUS ARTISTS COMPILATION REVIEW": {
         "artist": "Various Artists",
         "album": "Star Wars Head Space"
+    },
+    "A-1- After School Special ALBUM REVIEW": {
+        "artist": "A-1",
+        "album": "After School Special"
     }
 }
 
@@ -35,7 +39,7 @@ def parse_description(description: str) -> Dict[str, str]:
             vals["rating"] = line.replace("/10", "")
     return vals
 
-def create_video_object(api_return_data: dict) -> Dict[str, Union[str, Dict[str, str]]]:
+def create_video_object(api_return_data: dict, log_file: TextIO) -> Optional[Dict[str, Union[str, Dict[str, str]]]]:
     '''Create an object with only the data we need from a chunk of API response data.'''
     title: str = api_return_data["snippet"]["title"]
     description: str = api_return_data["snippet"]["description"]
@@ -43,19 +47,29 @@ def create_video_object(api_return_data: dict) -> Dict[str, Union[str, Dict[str,
     artist: str = title.split('-')[0].strip()
 
     try:
-        album: str = title.split('-')[1].replace("Album Review", "").replace("ALBUM REVIEW", "").replace("Review", "").replace("(QUICK)", "").strip()
+        album: str = '-'.join(title.split('-')[1:])\
+                        .strip('-')\
+                        .replace("Album Review", "")\
+                        .replace("Review", "")\
+                        .split("(QUICK")[0]\
+                        .split("ALBUM")[0]\
+                        .split("EP")[0]\
+                        .split("MIXTAPE")[0]\
+                        .split("ft.")[0]\
+                        .strip()
     except IndexError:
-        if title in problem_titles:
-            artist = problem_titles[title]["artist"]
-            album = problem_titles[title]["album"]
-        else:
-            print("Error handling the following video title:", title)
-            print("videoId:", video_id)
-            raise SystemExit(1)
+        print("Error handling the following video title:", title, file=log_file)
+        print("videoId:", video_id, file=log_file)
+        print("===========================", file=log_file)
+        return None
+    
+    if title in problem_titles: # our parser has trouble properly handling some titles, so we need to give it a tiny hand sometimes
+        artist = problem_titles[title]["artist"]
+        album = problem_titles[title]["album"]
 
     return {
-        "artist": artist,
-        "album": album,
+        "artist": artist.replace("'", "''"),
+        "album": album.replace("'", "''"),
         "video_id": video_id,
-        "rating_data": parse_description(description)
+        "rating_data": parse_description(description.replace("'", "''"))
     }

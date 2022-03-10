@@ -2,4 +2,5 @@
 *cache*
 .venv
 .env
-/data
+log.txt
+reviews.json

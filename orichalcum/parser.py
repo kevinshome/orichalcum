@@ -53,7 +53,7 @@ def create_video_object(api_return_data: dict, log_file: TextIO) -> Optional[Dic
                         .replace("Review", "")\
                         .split("(QUICK")[0]\
                         .split("ALBUM")[0]\
-                        .split("EP")[0]\
+                        .split(" EP ")[0]\
                         .split("MIXTAPE")[0]\
                         .split("ft.")[0]\
                         .strip()

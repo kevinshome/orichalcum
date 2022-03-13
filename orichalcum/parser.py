@@ -44,10 +44,10 @@ def create_video_object(api_return_data: dict, log_file: TextIO) -> Optional[Dic
     title: str = api_return_data["snippet"]["title"]
     description: str = api_return_data["snippet"]["description"]
     video_id: str = api_return_data["snippet"]["resourceId"]["videoId"]
-    artist: str = title.split('-')[0].strip()
+    artist: str = title.split('- ')[0].strip()
 
     try:
-        album: str = '-'.join(title.split('-')[1:])\
+        album: str = '-'.join(title.split('- ')[1:])\
                         .strip('-')\
                         .replace("Album Review", "")\
                         .replace("Review", "")\

@@ -10,6 +10,16 @@ import requests
 from . import parser
 
 API_KEY = os.environ["API_KEY"]
+TITLE_BLACKLIST = [
+    "3 reviews",
+    "5 reviews",
+    "4 reviews",
+    "y u no review",
+    "yunoreview",
+    "short audio reviews",
+    "did the internet kill the album review?",
+    "tnd podcast"
+]
 logfile = open("log.txt", 'a')
 
 def fetch_50(token: Optional[str]=None) -> Tuple[Dict, str]:
@@ -50,6 +60,8 @@ def fetch_playlist_data() -> dict:
 
         for item in api_data["items"]:
             t: str = item["snippet"]["title"]
+            if any(_ in t.lower() for _ in TITLE_BLACKLIST): # if the title contains an element in the blacklist, skip it
+                continue
             if "review" not in t.lower(): # since we're pulling from uploads playlist, we need to skip any non-review vids
                 continue
             if "track review" in t.lower(): # skip track reviews, we're only here for the albums
